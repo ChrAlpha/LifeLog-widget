@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'TimeLog Widget',
+  title: 'LifeLog Widget',
 }
 
 export default function RootLayout({
