@@ -90,7 +90,7 @@ export default function WeekPage() {
                     {weekDay}
                 </h1>
             </div>
-            <div className="grid grid-cols-7 gap-4 mb-20"> {/* Changed to static class */}
+            <div className="grid grid-cols-7 gap-4 mb-12"> {/* Changed to static class */}
                 {weekGridData.map((status, index) => (
                     <div
                         key={index}
@@ -108,7 +108,7 @@ export default function WeekPage() {
             <h2 className="text-xl mb-4 text-gray-400">
                 Week {currentWeek} of {totalWeeks} in {currentYear}
             </h2>
-            <div className="grid grid-cols-7 gap-4 mb-20"> {/* Changed to static class */}
+            <div className="grid grid-cols-7 gap-4 mb-12"> {/* Changed to static class */}
                 {weekofYearGridData.map((status, index) => (
                     <div
                         key={index}
