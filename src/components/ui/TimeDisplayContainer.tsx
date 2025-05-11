@@ -70,8 +70,8 @@ export default function TimeDisplayContainer({
 
             {/* Bottom right text */}
             <div className="absolute bottom-4 right-4 text-right">
-                <p className="text-[8px] text-gray-500">OLIVER REICHENSTEIN</p>
-                <p className="text-[8px] text-gray-500">© IAWRITER.COM</p>
+                <p className="text-[8px] text-gray-500">2025 - Present</p>
+                <p className="text-[8px] text-gray-500">© ChrAlpha</p>
             </div>
         </div>
     );
