@@ -62,8 +62,7 @@ export default function TimeTracker() {
 
         // Calculate time until the next minute
         const now = new Date()
-        const seconds = now.getSeconds()
-        const millisecondsUntilNextMinute = (60 - seconds) * 1000
+        const millisecondsUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds()
 
         // Schedule the first update for the start of the next minute
         const timeoutId = setTimeout(() => {
