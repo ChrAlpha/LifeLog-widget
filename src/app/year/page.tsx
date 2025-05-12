@@ -17,14 +17,16 @@ const getDaysInYear = (year: number): number => {
 };
 
 export default function YearPage() {
-    const [selectedTab, setSelectedTab] = useState("Year"); // Set initial tab
-    const tabs = ["Today", "Week", "Month", "Year", "Life"]; // Define tabs
+    const [selectedTab, setSelectedTab] = useState("Year");
+    const tabs = ["Today", "Week", "Month", "Year", "Life"];
     const [currentDayOfYear, setCurrentDayOfYear] = useState(0);
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [daysInYearGridData, setDaysInYearGridData] = useState<number[]>([]);
     const [totalDaysInCurrentYear, setTotalDaysInCurrentYear] = useState(0);
 
     useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval> | undefined;
+
         const updateYearView = () => {
             const now = new Date();
             const dayOfYear = getDayOfYear(now);
@@ -50,10 +52,26 @@ export default function YearPage() {
         };
 
         updateYearView();
-        // Update once a day
-        const intervalId = setInterval(updateYearView, 24 * 60 * 60 * 1000);
 
-        return () => clearInterval(intervalId);
+        // Update once a day
+        const now = new Date();
+        const nextDay = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() + 1,
+            0, 0, 0, 0
+        );
+        const millisecondsUntilNextDay = nextDay.getTime() - now.getTime();
+        const timeoutId = setTimeout(() => {
+            updateYearView();
+            intervalId = setInterval(updateYearView, 24 * 60 * 60 * 1000);
+        }, millisecondsUntilNextDay);
+        return () => {
+            clearTimeout(timeoutId);
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
     }, []);
 
     const getDaySuffix = (day: number) => {
@@ -66,10 +84,7 @@ export default function YearPage() {
         }
     };
 
-    // For the calendar grid of days in the year
-    // Aim for a grid that's roughly square-ish or fits well.
-    // E.g., 25 columns would mean about 14-15 rows.
-    const dayGridCols = 25; // Adjust as needed for visual appeal
+    const dayGridCols = 18;
     const dayGridRows = Math.ceil(totalDaysInCurrentYear / dayGridCols);
 
 
@@ -112,10 +127,6 @@ export default function YearPage() {
                     ),
                 )}
             </div>
-
-            {/* Year display - already part of the title, but could add more here if needed */}
-            {/* <h2 className="text-3xl mb-4 text-white">{currentYear}</h2> */}
-
         </TimeDisplayContainer>
     );
 }

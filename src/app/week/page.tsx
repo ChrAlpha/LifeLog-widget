@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import TimeDisplayContainer from "@/components/ui/TimeDisplayContainer"; // Import the container
+import TimeDisplayContainer from "@/components/ui/TimeDisplayContainer";
 
 // Helper function to get the week number
 const getWeekNumber = (d: Date): number => {
@@ -20,8 +20,8 @@ const getWeekDay = (d: Date): [number, string] => {
 }
 
 export default function WeekPage() {
-    const [selectedTab, setSelectedTab] = useState("Week"); // Set initial tab
-    const tabs = ["Today", "Week", "Month", "Year", "Life"]; // Define tabs
+    const [selectedTab, setSelectedTab] = useState("Week");
+    const tabs = ["Today", "Week", "Month", "Year", "Life"];
     const [currentWeek, setCurrentWeek] = useState(0);
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [weekDay, setWeekDay] = useState("");
@@ -30,6 +30,8 @@ export default function WeekPage() {
     const totalWeeks = 52;
 
     useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval> | undefined;
+
         const updateWeekView = () => {
             const now = new Date();
             const weekOfYear = getWeekNumber(now);
@@ -64,19 +66,32 @@ export default function WeekPage() {
         };
 
         updateWeekView();
-        // Update once a day, as week number doesn't change more frequently
-        const intervalId = setInterval(updateWeekView, 24 * 60 * 60 * 1000);
 
-        return () => clearInterval(intervalId);
+        // Update once a day, as week number doesn't change more frequently
+        const now = new Date();
+        const nextDay = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() + 1,
+            0, 0, 0, 0
+        );
+        const millisecondsUntilNextDay = nextDay.getTime() - now.getTime();
+
+        const timeoutId = setTimeout(() => {
+            updateWeekView();
+            intervalId = setInterval(updateWeekView, 1000 * 60 * 60 * 24); // Update every day
+        }, millisecondsUntilNextDay);
+
+        return () => {
+            clearTimeout(timeoutId);
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
     }, []);
 
-    // Determine grid layout (e.g., 9x6 or similar for 52 items)
-    // For 52 weeks, a 9x6 grid (54 cells) or 7x8 (56 cells) could work.
-    // Let's aim for a layout that's visually balanced.
-    // A 7 columns (days of week) by 8 rows layout seems reasonable.
-    const numCols = 7; // Or 9 or other factor of a number slightly larger than 52
+    const numCols = 7;
     const numRows = Math.ceil(totalWeeks / numCols);
-
 
     return (
         <TimeDisplayContainer

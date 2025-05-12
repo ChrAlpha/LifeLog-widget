@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import TimeDisplayContainer from "@/components/ui/TimeDisplayContainer"; // Import the container
+import TimeDisplayContainer from "@/components/ui/TimeDisplayContainer";
 
 // Helper function to get the month name
 const getMonthName = (monthIndex: number): string => {
@@ -20,19 +20,20 @@ const getFirstDayOfMonth = (year: number, month: number): number => {
 };
 
 export default function MonthPage() {
-    const [selectedTab, setSelectedTab] = useState("Month"); // Set initial tab
-    const tabs = ["Today", "Week", "Month", "Year", "Life"]; // Define tabs
+    const [selectedTab, setSelectedTab] = useState("Month");
+    const tabs = ["Today", "Week", "Month", "Year", "Life"];
     const [currentDayOfMonth, setCurrentDayOfMonth] = useState(0);
     const [currentMonth, setCurrentMonth] = useState(0); // 0-indexed
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [daysInMonthGridData, setDaysInMonthGridData] = useState<number[]>([]);
     const [monthsInYearGridData, setMonthsInYearGridData] = useState<number[]>([]);
     const [totalDaysInCurrentMonth, setTotalDaysInCurrentMonth] = useState(0);
-    const [firstDayIndex, setFirstDayIndex] = useState(0); // Starting day of the week for the month
-
+    const [firstDayIndex, setFirstDayIndex] = useState(0);
     const totalMonths = 12;
 
     useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval> | undefined;
+
         const updateMonthView = () => {
             const now = new Date();
             const dayOfMonth = now.getDate();
@@ -75,10 +76,28 @@ export default function MonthPage() {
         };
 
         updateMonthView();
-        // Update once a day, as month/day doesn't change more frequently
-        const intervalId = setInterval(updateMonthView, 24 * 60 * 60 * 1000);
 
-        return () => clearInterval(intervalId);
+        // Update once a day, as month/day doesn't change more frequently
+        const now = new Date();
+        const nextDay = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() + 1,
+            0, 0, 0, 0
+        );
+        const millisecondsUntilNextDay = nextDay.getTime() - now.getTime();
+
+        const timeoutId = setTimeout(() => {
+            updateMonthView();
+            intervalId = setInterval(updateMonthView, 24 * 60 * 60 * 1000);
+        }, millisecondsUntilNextDay);
+
+        return () => {
+            clearTimeout(timeoutId);
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        }
     }, []);
 
     const getDaySuffix = (day: number) => {
@@ -101,7 +120,7 @@ export default function MonthPage() {
             selectedTab={selectedTab}
             setSelectedTab={setSelectedTab}
             tabs={tabs}
-            hideTimeSpecificElements={true} // Hide time and minute indicators
+            hideTimeSpecificElements={true}
         >
             <div className="mb-8">
                 <h1 className="text-6xl font-light text-white tracking-widest">
@@ -113,7 +132,7 @@ export default function MonthPage() {
                 {Array.from({ length: firstDayIndex }).map((_, index) => (
                     <div
                         key={`empty-start-${index}`}
-                        className="w-3 h-3 rounded-sm bg-transparent" // Or some other placeholder style
+                        className="w-3 h-3 rounded-sm bg-transparent"
                     />
                 ))}
                 {/* Cells for the days of the month */}
@@ -129,7 +148,7 @@ export default function MonthPage() {
                         title={`Day ${index + 1}`}
                     />
                 ))}
-                {/* Optional: Fill remaining grid cells at the end */}
+                {/* Fill remaining grid cells at the end */}
                 {Array.from({ length: dayGridTotalCells - (totalDaysInCurrentMonth + firstDayIndex) }).map(
                     (_, index) => (
                         <div
@@ -157,12 +176,12 @@ export default function MonthPage() {
                         title={`${getMonthName(index)}`}
                     />
                 ))}
-                {/* Optional: Fill remaining grid cells if not a perfect 12 (e.g. if using 4x4 grid) */}
+                {/* Fill remaining grid cells if not a perfect 12 (e.g. if using 4x4 grid) */}
                 {Array.from({ length: (Math.ceil(totalMonths / 6) * 6) - totalMonths }).map(
                     (_, index) => (
                         <div
                             key={`empty-month-${index}`}
-                            className="w-3 h-3 rounded-sm bg-black" // Match container background
+                            className="w-3 h-3 rounded-sm bg-black"
                         />
                     ),
                 )}
