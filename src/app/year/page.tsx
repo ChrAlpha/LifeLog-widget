@@ -88,11 +88,11 @@ export default function YearPage() {
             </div>
 
             {/* Grid for days of the year */}
-            <div className="grid grid-cols-12 gap-1 mb-12"> {/* Reduced gap for denser grid */}
+            <div className="grid grid-cols-18 gap-2 mb-12"> {/* Reduced gap for denser grid */}
                 {daysInYearGridData.map((status, index) => (
                     <div
                         key={`day-of-year-${index}`}
-                        className={`w-1.5 h-1.5 rounded-sm ${ // Smaller dots
+                        className={`w-3 h-3 rounded-sm ${ // Smaller dots
                             status === 0
                                 ? "bg-gray-700" // Future day
                                 : status === 1

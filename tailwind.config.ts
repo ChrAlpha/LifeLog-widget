@@ -67,6 +67,9 @@ const config: Config = {
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
 			},
+			gridTemplateColumns: {
+				"18": "repeat(18, minmax(0, 1fr))",
+			},
 			keyframes: {
 				'accordion-down': {
 					from: {
