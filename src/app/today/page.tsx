@@ -115,7 +115,7 @@ export default function TimeTracker() {
                   : indicator === 0
                     ? "bg-gray-700"
                     : "animate-pulse bg-orange-500"
-                  }`}
+                }`}
                 style={{ height: `${indicator !== 1 && indicator !== 0 ? indicator * 1.5 : 1.5}rem` }} // Adjust height based on indicator value
               />
             ))}

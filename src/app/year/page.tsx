@@ -120,7 +120,7 @@ export default function YearPage() {
                 : status === 1
                   ? "bg-white" // Past day
                   : "animate-pulse bg-orange-500" // Current day
-              }`}
+            }`}
             title={`Day ${index + 1} of ${totalDaysInCurrentYear}`}
           />
         ))}

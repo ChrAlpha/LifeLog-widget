@@ -148,7 +148,7 @@ export default function MonthPage() {
               : status === 1
                 ? "bg-white"
                 : "animate-pulse bg-orange-500"
-              }`}
+            }`}
             title={`Day ${index + 1}`}
           />
         ))}
@@ -181,7 +181,7 @@ export default function MonthPage() {
               : status === 1
                 ? "bg-white"
                 : "animate-pulse bg-orange-500"
-              }`}
+            }`}
             title={`${getMonthName(index)}`}
           />
         ))}

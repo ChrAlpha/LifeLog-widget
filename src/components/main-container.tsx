@@ -33,7 +33,7 @@ export default function TimeDisplayContainer({
             <button
               key={index}
               className={`${selectedTab === tab ? "text-white" : "text-gray-500"
-                }`}
+              }`}
               onClick={() => {
                 setSelectedTab(tab);
                 router.push(`/${tab.toLowerCase()}`);

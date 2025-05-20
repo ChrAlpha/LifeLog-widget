@@ -120,7 +120,7 @@ export default function WeekPage() {
               : status === 1
                 ? "bg-white"
                 : "animate-pulse bg-orange-500"
-              }`}
+            }`}
             title={`Week ${index + 1}`}
           />
         ))}
@@ -148,7 +148,7 @@ export default function WeekPage() {
               : status === 1
                 ? "bg-white"
                 : "animate-pulse bg-orange-500"
-              }`}
+            }`}
             title={`Week ${index + 1}`}
           />
         ))}
