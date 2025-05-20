@@ -103,7 +103,7 @@ export default function YearPage() {
         </h1>
         <p className="text-xl text-gray-400">
           day of
-          {currentYear}
+          {" " + currentYear}
         </p>
       </div>
 
