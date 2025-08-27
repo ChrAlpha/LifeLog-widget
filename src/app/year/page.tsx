@@ -19,10 +19,19 @@ const getDaysInYear = (year: number): number => {
 export default function YearPage() {
   const [selectedTab, setSelectedTab] = useState("Year");
   const tabs = ["Today", "Week", "Month", "Year", "Life"];
-  const [currentDayOfYear, setCurrentDayOfYear] = useState(0);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [daysInYearGridData, setDaysInYearGridData] = useState<number[]>([]);
-  const [totalDaysInCurrentYear, setTotalDaysInCurrentYear] = useState(0);
+  // Synchronous initial state to avoid layout shift
+  const nowInit = new Date();
+  const initDayOfYear = getDayOfYear(nowInit);
+  const initYear = nowInit.getFullYear();
+  const initTotalDays = getDaysInYear(initYear);
+  const initialDaysGrid: number[] = Array.from({ length: initTotalDays }, (_, i) =>
+    i + 1 < initDayOfYear ? 1 : i + 1 === initDayOfYear ? 2 : 0,
+  );
+
+  const [currentDayOfYear, setCurrentDayOfYear] = useState(initDayOfYear);
+  const [currentYear, setCurrentYear] = useState(initYear);
+  const [daysInYearGridData, setDaysInYearGridData] = useState<number[]>(initialDaysGrid);
+  const [totalDaysInCurrentYear, setTotalDaysInCurrentYear] = useState(initTotalDays);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -52,8 +61,6 @@ export default function YearPage() {
       }
       setDaysInYearGridData(newDaysGridData);
     };
-
-    updateYearView();
 
     // Update once a day
     const now = new Date();
@@ -120,7 +127,7 @@ export default function YearPage() {
                 : status === 1
                   ? "bg-white" // Past day
                   : "animate-pulse bg-orange-500" // Current day
-            }`}
+              }`}
             title={`Day ${index + 1} of ${totalDaysInCurrentYear}`}
           />
         ))}

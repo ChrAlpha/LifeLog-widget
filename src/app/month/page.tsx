@@ -22,14 +22,29 @@ const getFirstDayOfMonth = (year: number, month: number): number => {
 export default function MonthPage() {
   const [selectedTab, setSelectedTab] = useState("Month");
   const tabs = ["Today", "Week", "Month", "Year", "Life"];
-  const [currentDayOfMonth, setCurrentDayOfMonth] = useState(0);
-  const [currentMonth, setCurrentMonth] = useState(0); // 0-indexed
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [daysInMonthGridData, setDaysInMonthGridData] = useState<number[]>([]);
-  const [monthsInYearGridData, setMonthsInYearGridData] = useState<number[]>([]);
-  const [totalDaysInCurrentMonth, setTotalDaysInCurrentMonth] = useState(0);
-  const [firstDayIndex, setFirstDayIndex] = useState(0);
+  // Synchronous initial state to avoid layout shift
+  const nowInit = new Date();
+  const initDay = nowInit.getDate();
+  const initMonth = nowInit.getMonth();
+  const initYear = nowInit.getFullYear();
+  const initDaysInMonth = getDaysInMonth(initYear, initMonth);
+  const initFirstDayIdx = getFirstDayOfMonth(initYear, initMonth);
+
+  const initialDaysGrid: number[] = Array.from({ length: initDaysInMonth }, (_, i) =>
+    i + 1 < initDay ? 1 : i + 1 === initDay ? 2 : 0,
+  );
   const totalMonths = 12;
+  const initialMonthsGrid: number[] = Array.from({ length: totalMonths }, (_, i) =>
+    i < initMonth ? 1 : i === initMonth ? 2 : 0,
+  );
+
+  const [currentDayOfMonth, setCurrentDayOfMonth] = useState(initDay);
+  const [currentMonth, setCurrentMonth] = useState(initMonth); // 0-indexed
+  const [currentYear, setCurrentYear] = useState(initYear);
+  const [daysInMonthGridData, setDaysInMonthGridData] = useState<number[]>(initialDaysGrid);
+  const [monthsInYearGridData, setMonthsInYearGridData] = useState<number[]>(initialMonthsGrid);
+  const [totalDaysInCurrentMonth, setTotalDaysInCurrentMonth] = useState(initDaysInMonth);
+  const [firstDayIndex, setFirstDayIndex] = useState(initFirstDayIdx);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -78,8 +93,6 @@ export default function MonthPage() {
       }
       setMonthsInYearGridData(newMonthsGridData);
     };
-
-    updateMonthView();
 
     // Update once a day, as month/day doesn't change more frequently
     const now = new Date();
@@ -148,7 +161,7 @@ export default function MonthPage() {
               : status === 1
                 ? "bg-white"
                 : "animate-pulse bg-orange-500"
-            }`}
+              }`}
             title={`Day ${index + 1}`}
           />
         ))}
@@ -181,7 +194,7 @@ export default function MonthPage() {
               : status === 1
                 ? "bg-white"
                 : "animate-pulse bg-orange-500"
-            }`}
+              }`}
             title={`${getMonthName(index)}`}
           />
         ))}

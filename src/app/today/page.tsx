@@ -6,9 +6,40 @@ import TimeDisplayContainer from "@/components/main-container"; // Import the ne
 export default function TimeTracker() {
   const [selectedTab, setSelectedTab] = useState("Today");
   const tabs = ["Today", "Week", "Month", "Year", "Life"];
-  const [currentTime, setCurrentTime] = useState("");
-  const [gridData, setGridData] = useState<number[][]>([]);
-  const [navIndicators, setNavIndicators] = useState<number[]>([]);
+  // Compute initial state synchronously to avoid layout jump after mount
+  const computeInitial = () => {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
+    const formattedTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+
+    // 24 hours -> 6x4 grid
+    const newGridDataArray: number[] = Array(24).fill(0);
+    for (let i = 0; i < 24; i++) {
+      if (i < hours) newGridDataArray[i] = 1;
+      else if (i === hours) newGridDataArray[i] = 2;
+    }
+    const reshapedGridData: number[][] = [];
+    for (let i = 0; i < 6; i++) {
+      reshapedGridData.push(newGridDataArray.slice(i * 4, i * 4 + 4));
+    }
+
+    // 6 indicators for 60 minutes, each represents 10 minutes
+    const newNavIndicatorsArray: number[] = Array(6).fill(0);
+    const currentMinuteBlock = Math.floor(minutes / 10);
+    for (let i = 0; i < 6; i++) {
+      if (i < currentMinuteBlock) newNavIndicatorsArray[i] = 1;
+      else if (i === currentMinuteBlock) newNavIndicatorsArray[i] = (minutes - i * 10) / 10;
+    }
+
+    return { formattedTime, reshapedGridData, newNavIndicatorsArray } as const;
+  };
+
+  const initial = computeInitial();
+  const [currentTime, setCurrentTime] = useState(initial.formattedTime);
+  const [gridData, setGridData] = useState<number[][]>(initial.reshapedGridData);
+  const [navIndicators, setNavIndicators] = useState<number[]>(initial.newNavIndicatorsArray);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -61,9 +92,6 @@ export default function TimeTracker() {
       setNavIndicators(newNavIndicatorsArray);
     };
 
-    // Initial call to set the time immediately
-    updateDateTime();
-
     // Calculate time until the next minute
     const now = new Date();
     const millisecondsUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
@@ -115,7 +143,7 @@ export default function TimeTracker() {
                   : indicator === 0
                     ? "bg-gray-700"
                     : "animate-pulse bg-orange-500"
-                }`}
+                  }`}
                 style={{ height: `${indicator !== 1 && indicator !== 0 ? indicator * 1.5 : 1.5}rem` }} // Adjust height based on indicator value
               />
             ))}

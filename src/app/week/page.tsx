@@ -22,12 +22,23 @@ const getWeekDay = (d: Date): [number, string] => {
 export default function WeekPage() {
   const [selectedTab, setSelectedTab] = useState("Week");
   const tabs = ["Today", "Week", "Month", "Year", "Life"];
-  const [currentWeek, setCurrentWeek] = useState(0);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [weekDay, setWeekDay] = useState("");
-  const [weekGridData, setWeekGridData] = useState<number[]>([]);
-  const [weekofYearGridData, setWeekofYearGridData] = useState<number[]>([]);
+  // Initial synchronous state to avoid layout jump
+  const nowInit = new Date();
+  const initialWeekOfYear = getWeekNumber(nowInit);
+  const [initialWeekIndex, initialWeekDay] = getWeekDay(nowInit);
   const totalWeeks = 52;
+  const initialWeekGridData: number[] = Array.from({ length: 7 }, (_, i) =>
+    i < initialWeekIndex ? 1 : i === initialWeekIndex ? 2 : 0,
+  );
+  const initialWeekOfYearGridData: number[] = Array.from({ length: totalWeeks }, (_, i) =>
+    i + 1 < initialWeekOfYear ? 1 : i + 1 === initialWeekOfYear ? 2 : 0,
+  );
+
+  const [currentWeek, setCurrentWeek] = useState(initialWeekOfYear);
+  const [currentYear, setCurrentYear] = useState(nowInit.getFullYear());
+  const [weekDay, setWeekDay] = useState(initialWeekDay);
+  const [weekGridData, setWeekGridData] = useState<number[]>(initialWeekGridData);
+  const [weekofYearGridData, setWeekofYearGridData] = useState<number[]>(initialWeekOfYearGridData);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -68,8 +79,6 @@ export default function WeekPage() {
       }
       setWeekofYearGridData(newWeekofYearGridData);
     };
-
-    updateWeekView();
 
     // Update once a day, as week number doesn't change more frequently
     const now = new Date();
@@ -120,7 +129,7 @@ export default function WeekPage() {
               : status === 1
                 ? "bg-white"
                 : "animate-pulse bg-orange-500"
-            }`}
+              }`}
             title={`Week ${index + 1}`}
           />
         ))}
@@ -148,7 +157,7 @@ export default function WeekPage() {
               : status === 1
                 ? "bg-white"
                 : "animate-pulse bg-orange-500"
-            }`}
+              }`}
             title={`Week ${index + 1}`}
           />
         ))}
