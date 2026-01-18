@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import TimeDisplayContainer from "@/components/main-container"; // Import the new container
+import TimeDisplayContainer from "@/components/main-container";
+import { StatusDot, GRID_STATUS, type GridStatus } from "@/components/status-dot";
 
 export default function TimeTracker() {
   const [selectedTab, setSelectedTab] = useState("Today");
   const tabs = ["Today", "Week", "Month", "Year", "Life"];
+
   // Compute initial state synchronously to avoid layout jump after mount
   const computeInitial = () => {
     const now = new Date();
@@ -15,12 +17,12 @@ export default function TimeTracker() {
     const formattedTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 
     // 24 hours -> 6x4 grid
-    const newGridDataArray: number[] = Array(24).fill(0);
+    const newGridDataArray: GridStatus[] = Array(24).fill(GRID_STATUS.FUTURE);
     for (let i = 0; i < 24; i++) {
-      if (i < hours) newGridDataArray[i] = 1;
-      else if (i === hours) newGridDataArray[i] = 2;
+      if (i < hours) newGridDataArray[i] = GRID_STATUS.PAST;
+      else if (i === hours) newGridDataArray[i] = GRID_STATUS.CURRENT;
     }
-    const reshapedGridData: number[][] = [];
+    const reshapedGridData: GridStatus[][] = [];
     for (let i = 0; i < 6; i++) {
       reshapedGridData.push(newGridDataArray.slice(i * 4, i * 4 + 4));
     }
@@ -38,7 +40,7 @@ export default function TimeTracker() {
 
   const initial = computeInitial();
   const [currentTime, setCurrentTime] = useState(initial.formattedTime);
-  const [gridData, setGridData] = useState<number[][]>(initial.reshapedGridData);
+  const [gridData, setGridData] = useState<GridStatus[][]>(initial.reshapedGridData);
   const [navIndicators, setNavIndicators] = useState<number[]>(initial.newNavIndicatorsArray);
 
   useEffect(() => {
@@ -46,47 +48,40 @@ export default function TimeTracker() {
 
     const updateDateTime = () => {
       const now = new Date();
-      const hours = now.getHours(); // 0-23
-      const minutes = now.getMinutes(); // 0-59
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
 
       // Format time as HH:MM
       const formattedTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
       setCurrentTime(formattedTime);
 
       // Calculate gridData (24 hours, 6 rows x 4 columns)
-      const newGridDataArray: number[] = Array(24).fill(0);
+      const newGridDataArray: GridStatus[] = Array(24).fill(GRID_STATUS.FUTURE);
       for (let i = 0; i < 24; i++) {
         if (i < hours) {
-          newGridDataArray[i] = 1; // Past hour (white)
+          newGridDataArray[i] = GRID_STATUS.PAST;
         }
         else if (i === hours) {
-          newGridDataArray[i] = 2; // Current hour (orange)
-        }
-        else {
-          newGridDataArray[i] = 0; // Future hour (gray)
+          newGridDataArray[i] = GRID_STATUS.CURRENT;
         }
       }
       // Reshape into 6x4 grid
-      const reshapedGridData: number[][] = [];
+      const reshapedGridData: GridStatus[][] = [];
       for (let i = 0; i < 6; i++) {
         reshapedGridData.push(newGridDataArray.slice(i * 4, i * 4 + 4));
       }
       setGridData(reshapedGridData);
 
       // Calculate navIndicators (6 indicators for 60 minutes)
-      // Each indicator represents 10 minutes (60 / 6)
       const newNavIndicatorsArray: number[] = Array(6).fill(0);
-      const currentMinuteBlock = Math.floor(minutes / 10); // 0-4
+      const currentMinuteBlock = Math.floor(minutes / 10);
 
       for (let i = 0; i < 6; i++) {
         if (i < currentMinuteBlock) {
-          newNavIndicatorsArray[i] = 1; // Past block (white)
+          newNavIndicatorsArray[i] = 1;
         }
         else if (i === currentMinuteBlock) {
-          newNavIndicatorsArray[i] = (minutes - i * 10) / 10; // Current block (orange)
-        }
-        else {
-          newNavIndicatorsArray[i] = 0; // Future block (gray)
+          newNavIndicatorsArray[i] = (minutes - i * 10) / 10;
         }
       }
       setNavIndicators(newNavIndicatorsArray);
@@ -98,9 +93,7 @@ export default function TimeTracker() {
 
     // Schedule the first update for the start of the next minute
     const timeoutId = setTimeout(() => {
-      updateDateTime(); // Update at the start of the minute
-
-      // Then, set an interval for every minute thereafter
+      updateDateTime();
       intervalId = setInterval(updateDateTime, 60000);
     }, millisecondsUntilNextMinute);
 
@@ -124,9 +117,10 @@ export default function TimeTracker() {
       <div className="mb-20 grid grid-cols-4 gap-8">
         {gridData.map((row, rowIndex) =>
           row.map((cell, colIndex) => (
-            <div
+            <StatusDot
               key={`${rowIndex}-${colIndex}`}
-              className={`size-3 rounded-sm ${cell === 0 ? "bg-gray-700" : cell === 1 ? "bg-white" : "animate-pulse bg-orange-500"}`}
+              status={cell}
+              title={`Hour ${rowIndex * 4 + colIndex}`}
             />
           )),
         )}
@@ -143,8 +137,8 @@ export default function TimeTracker() {
                   : indicator === 0
                     ? "bg-gray-700"
                     : "animate-pulse bg-orange-500"
-                  }`}
-                style={{ height: `${indicator !== 1 && indicator !== 0 ? indicator * 1.5 : 1.5}rem` }} // Adjust height based on indicator value
+                }`}
+                style={{ height: `${indicator !== 1 && indicator !== 0 ? indicator * 1.5 : 1.5}rem` }}
               />
             ))}
           </div>

@@ -1,7 +1,9 @@
 "use client";
 
 import TimeDisplayContainer from "@/components/main-container";
-import React, { useState, useEffect, useCallback } from "react";
+import { StatusDot, GRID_STATUS } from "@/components/status-dot";
+import { safeJSONParse } from "@/lib/date-utils";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocalStorage } from "foxact/use-local-storage";
 import { useIsMountedState } from "@/hooks/use-is-mounted";
 
@@ -14,11 +16,6 @@ interface AgeDetails {
 // Constants
 const TABS = ["Today", "Week", "Month", "Year", "Life"];
 const DEFAULT_TAB = "Life";
-const LIFE_GRID_STATUS = {
-  FUTURE: 0,
-  PAST: 1,
-  CURRENT: 2,
-};
 
 const LifePage = () => {
   const isMounted = useIsMountedState();
@@ -33,7 +30,10 @@ const LifePage = () => {
   const [tempLifeExpectancy, setTempLifeExpectancy] = useState<number>(0);
   // UI state
   const [ageDetails, setAgeDetails] = useState<AgeDetails>({ age: 0, percentageLived: 0 });
-  const [lifeGridData, setLifeGridData] = useState<number[]>([]); // 0: future, 1: past, 2: current
+  const [lifeGridData, setLifeGridData] = useState<number[]>([]);
+
+  // Ref for tracking yearly update timeout
+  const yearlyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Calculate and update the age details and life grid visualization
@@ -75,14 +75,14 @@ const LifePage = () => {
 
       // Generate life grid data
       const lifeGrid = Array.from({ length: lifeExpectancy }, (_, index) => {
-        if (index < age) return LIFE_GRID_STATUS.PAST; // Past years
-        if (index === age) return LIFE_GRID_STATUS.CURRENT; // Current year
-        return LIFE_GRID_STATUS.FUTURE; // Future years
+        if (index < age) return GRID_STATUS.PAST;
+        if (index === age) return GRID_STATUS.CURRENT;
+        return GRID_STATUS.FUTURE;
       });
 
       setLifeGridData(lifeGrid);
     }
-    catch (error) {
+    catch (error: unknown) {
       console.error("Error updating life view:", error);
     }
   }, [birthday, lifeExpectancy]);
@@ -96,65 +96,47 @@ const LifePage = () => {
     );
 
     if (hasSavedData) {
-      console.log("Birthday and life expectancy found in local storage.");
       setShowInputs(false);
 
-      // Initialize temporary form values with stored values
+      // Initialize with stored values using safe parsing
       const storedBirthday = localStorage.getItem("user-birthday");
       const storedLifeExpectancy = localStorage.getItem("user-life-expectancy");
 
       if (storedBirthday) {
-        setBirthday(JSON.parse(storedBirthday));
+        setBirthday(safeJSONParse(storedBirthday, ""));
       }
 
       if (storedLifeExpectancy) {
-        setLifeExpectancy(Number(JSON.parse(storedLifeExpectancy)));
+        setLifeExpectancy(Number(safeJSONParse(storedLifeExpectancy, 0)));
       }
 
-      // Only update view if we have saved data
       updateLifeView();
     }
     else {
-      // If no saved data, show the input form with empty values
       setShowInputs(true);
     }
 
-    // Setup yearly update timer (only affects display when data is saved)
-    let intervalId: ReturnType<typeof setInterval> | undefined;
-
-    const setupYearlyUpdate = () => {
+    // Setup yearly update with self-rescheduling timeout (avoids drift)
+    const scheduleNextYearUpdate = () => {
       const now = new Date();
-      // Calculate time until next year
-      const nextYear = new Date(now.getFullYear() + 1, 0, 1); // January 1st of next year
-      const millisecondsUntilNextYear = Math.max(0, nextYear.getTime() - now.getTime());
+      const nextYear = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
+      const msUntilNextYear = nextYear.getTime() - now.getTime();
 
-      console.log(`Setting up yearly update. Next update in ${Math.floor(millisecondsUntilNextYear / (1000 * 60 * 60 * 24))} days`);
-
-      // Set timeout for next year's first update
-      const timeoutId = setTimeout(() => {
-        // Update view at the start of the new year
+      yearlyTimeoutRef.current = setTimeout(() => {
         updateLifeView();
-
-        // Then set interval for subsequent yearly updates
-        intervalId = setInterval(() => {
-          console.log("Yearly update triggered");
-          updateLifeView();
-        }, 1000 * 60 * 60 * 24 * 365); // Approximately one year
-      }, millisecondsUntilNextYear);
-
-      return timeoutId;
+        scheduleNextYearUpdate();
+      }, msUntilNextYear);
     };
 
-    const timeoutId = setupYearlyUpdate();
+    scheduleNextYearUpdate();
 
     // Cleanup function
     return () => {
-      clearTimeout(timeoutId);
-      if (intervalId) {
-        clearInterval(intervalId);
+      if (yearlyTimeoutRef.current) {
+        clearTimeout(yearlyTimeoutRef.current);
       }
     };
-  }, [updateLifeView]); // Depend on updateLifeView
+  }, [updateLifeView, setBirthday, setLifeExpectancy]);
 
   // Update life view only when saved data changes
   useEffect(() => {
@@ -221,7 +203,7 @@ const LifePage = () => {
         selectedTab={selectedTab}
         setSelectedTab={setSelectedTab}
         tabs={TABS}
-        hideTimeSpecificElements={true} // Hide time and minute indicators
+        hideTimeSpecificElements={true}
       >
         <div className="container mx-auto p-4">
           <h1 className="mb-4 text-2xl text-white">Life Progress</h1>
@@ -248,7 +230,7 @@ const LifePage = () => {
                 type="number"
                 id="lifeExpectancy"
                 value={tempLifeExpectancy || ""}
-                onChange={e => setTempLifeExpectancy(parseInt(e.target.value, 10))}
+                onChange={e => setTempLifeExpectancy(parseInt(e.target.value, 10) || 0)}
                 min="1"
                 max="150"
                 className="mt-1 block w-full rounded-md border border-gray-700 bg-slate-700 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
@@ -314,33 +296,17 @@ const LifePage = () => {
       <div className="mb-8">
         <h2 className="sr-only mb-2 text-xl text-gray-300">Life Timeline</h2>
         <div className="mb-8 grid grid-cols-6 gap-4" aria-label="Life timeline visualization, each square represents one year">
-          {lifeGridData.map((status, index) => {
-            // Determine CSS class based on status
-            const statusClass = status === LIFE_GRID_STATUS.FUTURE
-              ? "bg-gray-700"
-              : status === LIFE_GRID_STATUS.PAST
-                ? "bg-white"
-                : "animate-pulse bg-orange-500";
-
-            return (
-              <div
-                key={`life-year-${index}`}
-                className={`size-3 rounded-sm ${statusClass}`}
-                title={`Age ${index + 1}`}
-                aria-label={`Age ${index + 1}: ${status === LIFE_GRID_STATUS.FUTURE
-                  ? "Future"
-                  : status === LIFE_GRID_STATUS.PAST
-                    ? "Past"
-                    : "Current"
-                }`}
-              />
-            );
-          })}
+          {lifeGridData.map((status, index) => (
+            <StatusDot
+              key={`life-year-${index}`}
+              status={status as 0 | 1 | 2}
+              title={`Age ${index + 1}`}
+            />
+          ))}
         </div>
 
         <button
           onClick={() => {
-            // Load current values into temporary state for editing
             setTempBirthday(birthday);
             setTempLifeExpectancy(lifeExpectancy);
             setShowInputs(true);

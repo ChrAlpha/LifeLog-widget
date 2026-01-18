@@ -2,26 +2,14 @@
 
 import { useState, useEffect } from "react";
 import TimeDisplayContainer from "@/components/main-container";
-
-// Helper function to get the month name
-const getMonthName = (monthIndex: number): string => {
-  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  return months[monthIndex];
-};
-
-// Helper function to get the number of days in a month
-const getDaysInMonth = (year: number, month: number): number => {
-  return new Date(year, month + 1, 0).getDate();
-};
-
-// Helper function to get the starting day of the week for a month (0 for Sunday, 1 for Monday, etc.)
-const getFirstDayOfMonth = (year: number, month: number): number => {
-  return new Date(year, month, 1).getDay();
-};
+import { StatusDot, generateGridData } from "@/components/status-dot";
+import { getDaySuffix, getMonthName, getDaysInMonth, getFirstDayOfMonth } from "@/lib/date-utils";
 
 export default function MonthPage() {
   const [selectedTab, setSelectedTab] = useState("Month");
   const tabs = ["Today", "Week", "Month", "Year", "Life"];
+  const totalMonths = 12;
+
   // Synchronous initial state to avoid layout shift
   const nowInit = new Date();
   const initDay = nowInit.getDate();
@@ -30,19 +18,14 @@ export default function MonthPage() {
   const initDaysInMonth = getDaysInMonth(initYear, initMonth);
   const initFirstDayIdx = getFirstDayOfMonth(initYear, initMonth);
 
-  const initialDaysGrid: number[] = Array.from({ length: initDaysInMonth }, (_, i) =>
-    i + 1 < initDay ? 1 : i + 1 === initDay ? 2 : 0,
-  );
-  const totalMonths = 12;
-  const initialMonthsGrid: number[] = Array.from({ length: totalMonths }, (_, i) =>
-    i < initMonth ? 1 : i === initMonth ? 2 : 0,
-  );
+  const initialDaysGrid = generateGridData(initDaysInMonth, initDay);
+  const initialMonthsGrid = generateGridData(totalMonths, initMonth, true);
 
   const [currentDayOfMonth, setCurrentDayOfMonth] = useState(initDay);
-  const [currentMonth, setCurrentMonth] = useState(initMonth); // 0-indexed
+  const [currentMonth, setCurrentMonth] = useState(initMonth);
   const [currentYear, setCurrentYear] = useState(initYear);
-  const [daysInMonthGridData, setDaysInMonthGridData] = useState<number[]>(initialDaysGrid);
-  const [monthsInYearGridData, setMonthsInYearGridData] = useState<number[]>(initialMonthsGrid);
+  const [daysInMonthGridData, setDaysInMonthGridData] = useState(initialDaysGrid);
+  const [monthsInYearGridData, setMonthsInYearGridData] = useState(initialMonthsGrid);
   const [totalDaysInCurrentMonth, setTotalDaysInCurrentMonth] = useState(initDaysInMonth);
   const [firstDayIndex, setFirstDayIndex] = useState(initFirstDayIdx);
 
@@ -52,7 +35,7 @@ export default function MonthPage() {
     const updateMonthView = () => {
       const now = new Date();
       const dayOfMonth = now.getDate();
-      const monthOfYear = now.getMonth(); // 0-indexed
+      const monthOfYear = now.getMonth();
       const year = now.getFullYear();
       const daysInThisMonth = getDaysInMonth(year, monthOfYear);
       const firstDay = getFirstDayOfMonth(year, monthOfYear);
@@ -62,39 +45,11 @@ export default function MonthPage() {
       setCurrentYear(year);
       setTotalDaysInCurrentMonth(daysInThisMonth);
       setFirstDayIndex(firstDay);
-
-      // Grid data for days in the month
-      const newDaysGridData: number[] = Array(daysInThisMonth).fill(0);
-      for (let i = 0; i < daysInThisMonth; i++) {
-        if (i + 1 < dayOfMonth) {
-          newDaysGridData[i] = 1; // Past day (white)
-        }
-        else if (i + 1 === dayOfMonth) {
-          newDaysGridData[i] = 2; // Current day (orange)
-        }
-        else {
-          newDaysGridData[i] = 0; // Future day (gray)
-        }
-      }
-      setDaysInMonthGridData(newDaysGridData);
-
-      // Grid data for months in the year
-      const newMonthsGridData: number[] = Array(totalMonths).fill(0);
-      for (let i = 0; i < totalMonths; i++) {
-        if (i < monthOfYear) {
-          newMonthsGridData[i] = 1; // Past month (white)
-        }
-        else if (i === monthOfYear) {
-          newMonthsGridData[i] = 2; // Current month (orange)
-        }
-        else {
-          newMonthsGridData[i] = 0; // Future month (gray)
-        }
-      }
-      setMonthsInYearGridData(newMonthsGridData);
+      setDaysInMonthGridData(generateGridData(daysInThisMonth, dayOfMonth));
+      setMonthsInYearGridData(generateGridData(totalMonths, monthOfYear, true));
     };
 
-    // Update once a day, as month/day doesn't change more frequently
+    // Update once a day
     const now = new Date();
     const nextDay = new Date(
       now.getFullYear(),
@@ -116,16 +71,6 @@ export default function MonthPage() {
       }
     };
   }, []);
-
-  const getDaySuffix = (day: number) => {
-    if (day > 3 && day < 21) return "th";
-    switch (day % 10) {
-      case 1: return "st";
-      case 2: return "nd";
-      case 3: return "rd";
-      default: return "th";
-    }
-  };
 
   // For the calendar grid of days
   const dayGridCols = 7;
@@ -154,14 +99,9 @@ export default function MonthPage() {
         ))}
         {/* Cells for the days of the month */}
         {daysInMonthGridData.map((status, index) => (
-          <div
+          <StatusDot
             key={`day-${index}`}
-            className={`size-3 rounded-sm ${status === 0
-              ? "bg-gray-700"
-              : status === 1
-                ? "bg-white"
-                : "animate-pulse bg-orange-500"
-              }`}
+            status={status}
             title={`Day ${index + 1}`}
           />
         ))}
@@ -180,25 +120,19 @@ export default function MonthPage() {
         <span className="text-3xl text-white">{getMonthName(currentMonth)}</span>
         {" "}
         in
+        {" "}
         {currentYear}
       </h2>
-      {/* Months of the year grid (e.g., 4x3) */}
+      {/* Months of the year grid */}
       <div className="mb-20 grid grid-cols-6 gap-4">
-        {" "}
-        {/* Adjusted to 6 columns for better fit */}
         {monthsInYearGridData.map((status, index) => (
-          <div
+          <StatusDot
             key={`month-${index}`}
-            className={`size-3 rounded-sm ${status === 0
-              ? "bg-gray-700"
-              : status === 1
-                ? "bg-white"
-                : "animate-pulse bg-orange-500"
-              }`}
-            title={`${getMonthName(index)}`}
+            status={status}
+            title={getMonthName(index)}
           />
         ))}
-        {/* Fill remaining grid cells if not a perfect 12 (e.g. if using 4x4 grid) */}
+        {/* Fill remaining grid cells if not a perfect 12 */}
         {Array.from({ length: (Math.ceil(totalMonths / 6) * 6) - totalMonths }).map(
           (_, index) => (
             <div
